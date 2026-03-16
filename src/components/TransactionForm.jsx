@@ -10,7 +10,7 @@ function TransactionForm({ fundList, onSaved }) {
   const [selectedFund, setSelectedFund] = useState(null)
   const [quantity, setQuantity] = useState('')
   const [pricePerUnit, setPricePerUnit] = useState('')
-  const [date, setDate] = useState(TODAY)
+  const [date, setDate] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
   const [showDropdown, setShowDropdown] = useState(false)
@@ -87,11 +87,8 @@ function TransactionForm({ fundList, onSaved }) {
       setMessage({ type: 'error', text: 'Geçerli bir fiyat giriniz.' })
       return
     }
-    if (!date) {
-      setMessage({ type: 'error', text: 'Tarih seçiniz.' })
-      return
-    }
-    if (date > TODAY) {
+    const txDate = date || TODAY
+    if (txDate > TODAY) {
       setMessage({ type: 'error', text: 'İleri tarihli işlem eklenemez.' })
       return
     }
@@ -103,7 +100,7 @@ function TransactionForm({ fundList, onSaved }) {
         type,
         quantity: qty,
         pricePerUnit: price,
-        date: new Date(date),
+        date: new Date(txDate),
       })
 
       const label = type === 'buy' ? 'Alım' : 'Satım'
@@ -114,7 +111,7 @@ function TransactionForm({ fundList, onSaved }) {
       setSelectedFund(null)
       setQuantity('')
       setPricePerUnit('')
-      setDate(TODAY)
+      setDate('')
 
       if (onSaved) onSaved()
     } catch {
@@ -210,7 +207,7 @@ function TransactionForm({ fundList, onSaved }) {
           </div>
 
           <div className="tx-form-group">
-            <label>Tarih</label>
+            <label>Tarih <span style={{ fontWeight: 400, color: 'var(--text-secondary)' }}>(boşsa bugün)</span></label>
             <input
               type="date"
               value={date}
