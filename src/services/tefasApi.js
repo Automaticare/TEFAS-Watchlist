@@ -1,4 +1,6 @@
 const TEFAS_BASE_URL = '/api/DB'
+const MAX_DAYS_PER_REQUEST = 90
+const FUND_TYPES = ['YAT', 'EMK', 'BYF']
 
 /**
  * Tarihi dd.mm.yyyy formatına çevirir.
@@ -12,44 +14,102 @@ function formatDate(date) {
 }
 
 /**
- * TEFAS API'ye POST isteği gönderir.
+ * Tarih aralığını 90 günlük parçalara böler.
  */
-async function tefasPost(endpoint, params) {
-  const body = new URLSearchParams(params)
+function chunkDateRange(startDate, endDate) {
+  const chunks = []
+  let current = new Date(startDate)
+  const end = new Date(endDate)
 
-  const response = await fetch(`${TEFAS_BASE_URL}/${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-      'X-Requested-With': 'XMLHttpRequest',
-    },
-    body: body.toString(),
-  })
+  while (current <= end) {
+    const chunkEnd = new Date(current)
+    chunkEnd.setDate(chunkEnd.getDate() + MAX_DAYS_PER_REQUEST - 1)
 
-  if (!response.ok) {
-    throw new Error(`TEFAS API error: ${response.status} ${response.statusText}`)
+    chunks.push({
+      start: new Date(current),
+      end: chunkEnd > end ? new Date(end) : chunkEnd,
+    })
+
+    current = new Date(chunkEnd)
+    current.setDate(current.getDate() + 1)
   }
 
-  return response.json()
+  return chunks
+}
+
+/**
+ * TEFAS API'ye POST isteği gönderir. Başarısız olursa retry yapar.
+ */
+async function tefasPost(endpoint, params, retries = 2) {
+  const body = new URLSearchParams(params)
+
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const response = await fetch(`${TEFAS_BASE_URL}/${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: body.toString(),
+      })
+
+      if (!response.ok) {
+        throw new Error(`TEFAS API error: ${response.status} ${response.statusText}`)
+      }
+
+      const data = await response.json()
+      return data
+    } catch (error) {
+      if (attempt === retries) {
+        throw error
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1000 * (attempt + 1)))
+    }
+  }
+}
+
+/**
+ * Tüm fon tiplerini deneyerek veri çeker.
+ * TEFAS fontip parametresini zorunlu tutuyor, hangi tipte olduğunu bilmiyorsak hepsini deneriz.
+ */
+async function tefasPostAllTypes(endpoint, params) {
+  for (const fontip of FUND_TYPES) {
+    const result = await tefasPost(endpoint, { ...params, fontip })
+    if (result.data && result.data.length > 0) {
+      return result
+    }
+  }
+  return { data: [] }
 }
 
 /**
  * Fon fiyat ve getiri bilgilerini çeker.
+ * 90 günden uzun aralıkları otomatik olarak parçalar.
  *
- * @param {string} fundCode - Fon kodu (örn: "TTA"). Boş bırakılırsa tüm fonlar döner.
+ * @param {string} fundCode - Fon kodu (örn: "TTA")
  * @param {Date|string} startDate - Başlangıç tarihi
  * @param {Date|string} endDate - Bitiş tarihi
  * @returns {Promise<Array>} Fon verileri
  */
 export async function getFundHistory(fundCode, startDate, endDate) {
-  const params = {
-    fonkod: fundCode || '',
-    bastarih: formatDate(startDate),
-    bittarih: formatDate(endDate),
+  const chunks = chunkDateRange(startDate, endDate)
+
+  const results = []
+  for (const chunk of chunks) {
+    const params = {
+      fonkod: fundCode || '',
+      bastarih: formatDate(chunk.start),
+      bittarih: formatDate(chunk.end),
+    }
+
+    const result = await tefasPostAllTypes('BindHistoryInfo', params)
+    if (result.data) {
+      results.push(...result.data)
+    }
   }
 
-  const result = await tefasPost('BindHistoryInfo', params)
-  return result.data || []
+  return results
 }
 
 /**
@@ -83,6 +143,7 @@ export async function getMultipleFundsToday(fundCodes) {
 
 /**
  * Fonun portföy dağılımını çeker (hisse, tahvil, altın, döviz vb.).
+ * 90 günden uzun aralıkları otomatik olarak parçalar.
  *
  * @param {string} fundCode - Fon kodu (örn: "TTA")
  * @param {Date|string} startDate - Başlangıç tarihi
@@ -90,14 +151,23 @@ export async function getMultipleFundsToday(fundCodes) {
  * @returns {Promise<Array>} Portföy dağılım verileri
  */
 export async function getFundAllocation(fundCode, startDate, endDate) {
-  const params = {
-    fonkod: fundCode || '',
-    bastarih: formatDate(startDate),
-    bittarih: formatDate(endDate),
+  const chunks = chunkDateRange(startDate, endDate)
+
+  const results = []
+  for (const chunk of chunks) {
+    const params = {
+      fonkod: fundCode || '',
+      bastarih: formatDate(chunk.start),
+      bittarih: formatDate(chunk.end),
+    }
+
+    const result = await tefasPostAllTypes('BindHistoryAllocation', params)
+    if (result.data) {
+      results.push(...result.data)
+    }
   }
 
-  const result = await tefasPost('BindHistoryAllocation', params)
-  return result.data || []
+  return results
 }
 
 /**
@@ -112,4 +182,4 @@ export async function getFundAllocationToday(fundCode) {
   return data.length > 0 ? data[0] : null
 }
 
-export { formatDate }
+export { formatDate, chunkDateRange }
