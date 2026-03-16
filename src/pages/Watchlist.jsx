@@ -13,7 +13,7 @@ function calcReturn(currentPrice, oldPrice) {
 }
 
 function Watchlist() {
-  const { fundCodes, addFund } = useWatchlist()
+  const { fundCodes, addFund, removeFund, resetToDefaults } = useWatchlist()
   const [funds, setFunds] = useState([])
   const [fundsHistory, setFundsHistory] = useState([])
   const [loading, setLoading] = useState(true)
@@ -78,8 +78,13 @@ function Watchlist() {
         <h2>Watchlist</h2>
         <DateRangeSelector value={days} onChange={setDays} />
       </div>
-      <AddFundForm onAdd={addFund} existingCodes={fundCodes} />
-      <FundTable funds={funds} loading={loading} error={error} />
+      <div className="watchlist-actions">
+        <AddFundForm onAdd={addFund} existingCodes={fundCodes} />
+        <button className="reset-btn" onClick={resetToDefaults}>
+          Varsayılana Sıfırla
+        </button>
+      </div>
+      <FundTable funds={funds} loading={loading} error={error} onRemove={removeFund} />
       <ReturnComparisonChart funds={funds} loading={loading} error={error} />
       <MultiPriceChart fundsHistory={fundsHistory} loading={loading} error={error} />
     </div>

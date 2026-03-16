@@ -37,6 +37,30 @@
   gap: 12px;
 }
 
+.watchlist-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.reset-btn {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  border-color: var(--negative);
+  color: var(--negative);
+}
+
 .back-link {
   display: inline-block;
   margin-bottom: 16px;

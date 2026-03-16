@@ -62,7 +62,7 @@ function sortFunds(funds, sortKey, sortDir) {
   })
 }
 
-function FundTable({ funds, loading, error }) {
+function FundTable({ funds, loading, error, onRemove }) {
   const [sortKey, setSortKey] = useState('fundCode')
   const [sortDir, setSortDir] = useState('asc')
 
@@ -141,6 +141,7 @@ function FundTable({ funds, loading, error }) {
                 )}
               </th>
             ))}
+            {onRemove && <th className="text-center"></th>}
           </tr>
         </thead>
         <tbody>
@@ -151,6 +152,17 @@ function FundTable({ funds, loading, error }) {
                   {renderCell(fund, col.key)}
                 </td>
               ))}
+              {onRemove && (
+                <td className="text-center">
+                  <button
+                    className="remove-fund-btn"
+                    onClick={() => onRemove(fund.fundCode)}
+                    title={`${fund.fundCode} fonunu çıkar`}
+                  >
+                    ✕
+                  </button>
+                </td>
+              )}
             </tr>
           ))}
         </tbody>
