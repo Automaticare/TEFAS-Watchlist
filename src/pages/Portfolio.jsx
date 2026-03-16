@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import TransactionForm from '../components/TransactionForm'
+import PortfolioSummary from '../components/PortfolioSummary'
 import { getAllTransactions } from '../services/portfolioService'
 import { useFundList } from '../hooks/useFundList'
 
@@ -47,6 +48,8 @@ function Portfolio() {
         <h2>Portföy</h2>
         <Link to="/" className="back-link">Watchlist'e Dön</Link>
       </div>
+
+      <PortfolioSummary transactions={transactions} />
 
       <TransactionForm fundList={fundList} onSaved={fetchTransactions} />
 
