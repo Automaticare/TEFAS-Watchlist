@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import FundSummaryCard from '../components/FundSummaryCard'
-import { getFundHistory } from '../services/tefasApi'
+import AllocationChart from '../components/AllocationChart'
+import { getFundHistory, getFundAllocation } from '../services/tefasApi'
+import { transformAllocationData } from '../services/firestoreWrite'
 
 function calcReturn(currentPrice, oldPrice) {
   if (!currentPrice || !oldPrice) return null
@@ -11,8 +13,11 @@ function calcReturn(currentPrice, oldPrice) {
 function FundDetail() {
   const { fundCode } = useParams()
   const [fund, setFund] = useState(null)
+  const [allocation, setAllocation] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [allocLoading, setAllocLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [allocError, setAllocError] = useState(null)
 
   useEffect(() => {
     async function fetchFund() {
@@ -55,13 +60,40 @@ function FundDetail() {
       }
     }
 
+    async function fetchAllocation() {
+      try {
+        setAllocLoading(true)
+        setAllocError(null)
+
+        const today = new Date()
+        const weekAgo = new Date()
+        weekAgo.setDate(today.getDate() - 7)
+
+        const data = await getFundAllocation(fundCode, weekAgo, today)
+
+        if (!data || data.length === 0) {
+          setAllocError('Dağılım verisi bulunamadı.')
+          return
+        }
+
+        const latest = [...data].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))[0]
+        setAllocation(transformAllocationData(latest))
+      } catch (err) {
+        setAllocError('Dağılım verisi yüklenirken bir hata oluştu.')
+      } finally {
+        setAllocLoading(false)
+      }
+    }
+
     fetchFund()
+    fetchAllocation()
   }, [fundCode])
 
   return (
     <div>
       <Link to="/" className="back-link">← Watchlist'e Dön</Link>
       <FundSummaryCard fund={fund} loading={loading} error={error} />
+      <AllocationChart allocation={allocation} loading={allocLoading} error={allocError} />
     </div>
   )
 }
