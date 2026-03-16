@@ -198,4 +198,43 @@ export async function getFundAllocationToday(fundCode) {
   return data.length > 0 ? data[0] : null
 }
 
+/**
+ * Tüm TEFAS fonlarının kod ve isim listesini çeker.
+ * Her üç fon tipini (YAT, EMK, BYF) sorgular ve sonuçları birleştirir.
+ *
+ * @returns {Promise<Array<{code: string, name: string}>>} Fon listesi (kod + isim)
+ */
+export async function getAllFundsList() {
+  const today = new Date()
+  const todayStr = formatDate(today)
+
+  const params = {
+    fonkod: '',
+    bastarih: todayStr,
+    bittarih: todayStr,
+  }
+
+  const allFunds = new Map()
+
+  for (const fontip of FUND_TYPES) {
+    try {
+      const result = await tefasPost('BindHistoryInfo', { ...params, fontip })
+      if (result.data) {
+        for (const item of result.data) {
+          if (item.FONKODU && !allFunds.has(item.FONKODU)) {
+            allFunds.set(item.FONKODU, {
+              code: item.FONKODU,
+              name: item.FONUNVAN || item.FONKODU,
+            })
+          }
+        }
+      }
+    } catch {
+      // Bir tip başarısız olursa diğerlerine devam et
+    }
+  }
+
+  return Array.from(allFunds.values()).sort((a, b) => a.code.localeCompare(b.code))
+}
+
 export { formatDate, chunkDateRange }
