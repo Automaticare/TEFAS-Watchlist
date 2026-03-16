@@ -81,4 +81,35 @@ export async function getMultipleFundsToday(fundCodes) {
   }))
 }
 
+/**
+ * Fonun portföy dağılımını çeker (hisse, tahvil, altın, döviz vb.).
+ *
+ * @param {string} fundCode - Fon kodu (örn: "TTA")
+ * @param {Date|string} startDate - Başlangıç tarihi
+ * @param {Date|string} endDate - Bitiş tarihi
+ * @returns {Promise<Array>} Portföy dağılım verileri
+ */
+export async function getFundAllocation(fundCode, startDate, endDate) {
+  const params = {
+    fonkod: fundCode || '',
+    bastarih: formatDate(startDate),
+    bittarih: formatDate(endDate),
+  }
+
+  const result = await tefasPost('BindHistoryAllocation', params)
+  return result.data || []
+}
+
+/**
+ * Fonun bugünkü portföy dağılımını çeker.
+ *
+ * @param {string} fundCode - Fon kodu
+ * @returns {Promise<Object|null>} Güncel portföy dağılımı
+ */
+export async function getFundAllocationToday(fundCode) {
+  const today = new Date()
+  const data = await getFundAllocation(fundCode, today, today)
+  return data.length > 0 ? data[0] : null
+}
+
 export { formatDate }
