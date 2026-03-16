@@ -1,0 +1,62 @@
+.fund-table-wrapper {
+  overflow-x: auto;
+}
+
+.fund-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.fund-table th,
+.fund-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.fund-table th {
+  font-weight: 600;
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--bg);
+  position: sticky;
+  top: 0;
+}
+
+.fund-table tbody tr:hover {
+  background: rgba(13, 110, 253, 0.04);
+}
+
+.fund-code {
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.fund-code:hover {
+  text-decoration: underline;
+}
+
+.fund-name {
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.fund-table-status {
+  padding: 40px 0;
+  text-align: center;
+  color: var(--text-secondary);
+}
+
+.fund-table-error {
+  color: var(--negative);
+}
