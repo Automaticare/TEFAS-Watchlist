@@ -1,4 +1,6 @@
+const IS_DEV = import.meta.env.DEV
 const TEFAS_BASE_URL = '/api/DB'
+const FUNCTION_URL = '/tefasProxy'
 const MAX_DAYS_PER_REQUEST = 90
 const FUND_TYPES = ['YAT', 'EMK', 'BYF']
 
@@ -45,14 +47,28 @@ async function tefasPost(endpoint, params, retries = 2) {
 
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
-      const response = await fetch(`${TEFAS_BASE_URL}/${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest',
-        },
-        body: body.toString(),
-      })
+      let response
+
+      if (IS_DEV) {
+        // Dev: Vite proxy üzerinden doğrudan TEFAS'a
+        response = await fetch(`${TEFAS_BASE_URL}/${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Requested-With': 'XMLHttpRequest',
+          },
+          body: body.toString(),
+        })
+      } else {
+        // Production: Firebase Cloud Function proxy
+        response = await fetch(`${FUNCTION_URL}?endpoint=${endpoint}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: body.toString(),
+        })
+      }
 
       if (!response.ok) {
         throw new Error(`TEFAS API error: ${response.status} ${response.statusText}`)
