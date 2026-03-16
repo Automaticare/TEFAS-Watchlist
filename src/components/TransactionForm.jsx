@@ -71,14 +71,14 @@ function TransactionForm({ fundList, onSaved }) {
     e.preventDefault()
     setMessage(null)
 
-    const fundCode = selectedFund ? selectedFund.code : fundQuery.toUpperCase().trim()
     const qty = parseFloat(quantity)
     const price = parseFloat(pricePerUnit)
 
-    if (!fundCode) {
-      setMessage({ type: 'error', text: 'Fon kodu seçiniz.' })
+    if (!selectedFund) {
+      setMessage({ type: 'error', text: 'Listeden bir fon seçiniz.' })
       return
     }
+    const fundCode = selectedFund.code
     if (!qty || qty <= 0) {
       setMessage({ type: 'error', text: 'Geçerli bir adet giriniz.' })
       return
