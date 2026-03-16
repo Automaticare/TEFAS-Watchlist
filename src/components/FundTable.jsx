@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import './FundTable.css'
 
@@ -35,7 +36,45 @@ function returnClass(value) {
   return ''
 }
 
+const COLUMNS = [
+  { key: 'fundCode', label: 'Kod', align: 'left' },
+  { key: 'fundName', label: 'Fon Adı', align: 'left' },
+  { key: 'price', label: 'Fiyat', align: 'right' },
+  { key: 'dailyReturn', label: 'Günlük', align: 'right' },
+  { key: 'weeklyReturn', label: 'Haftalık', align: 'right' },
+  { key: 'monthlyReturn', label: 'Aylık', align: 'right' },
+  { key: 'investors', label: 'Yatırımcı', align: 'right' },
+  { key: 'marketCap', label: 'Piyasa Değeri', align: 'right' },
+]
+
+function sortFunds(funds, sortKey, sortDir) {
+  return [...funds].sort((a, b) => {
+    const valA = a[sortKey] ?? -Infinity
+    const valB = b[sortKey] ?? -Infinity
+
+    if (typeof valA === 'string') {
+      return sortDir === 'asc'
+        ? valA.localeCompare(valB, 'tr')
+        : valB.localeCompare(valA, 'tr')
+    }
+
+    return sortDir === 'asc' ? valA - valB : valB - valA
+  })
+}
+
 function FundTable({ funds, loading, error }) {
+  const [sortKey, setSortKey] = useState('fundCode')
+  const [sortDir, setSortDir] = useState('asc')
+
+  function handleSort(key) {
+    if (sortKey === key) {
+      setSortDir(sortDir === 'asc' ? 'desc' : 'asc')
+    } else {
+      setSortKey(key)
+      setSortDir(key === 'fundCode' || key === 'fundName' ? 'asc' : 'desc')
+    }
+  }
+
   if (loading) {
     return <p className="fund-table-status">Veriler yükleniyor...</p>
   }
@@ -48,42 +87,70 @@ function FundTable({ funds, loading, error }) {
     return <p className="fund-table-status">Watchlist'te fon bulunamadı.</p>
   }
 
+  const sorted = sortFunds(funds, sortKey, sortDir)
+
+  function renderCell(fund, key) {
+    switch (key) {
+      case 'fundCode':
+        return (
+          <Link to={`/fund/${fund.fundCode}`} className="fund-code">
+            {fund.fundCode}
+          </Link>
+        )
+      case 'fundName':
+        return <span className="fund-name">{fund.fundName}</span>
+      case 'price':
+        return formatPrice(fund.price)
+      case 'dailyReturn':
+      case 'weeklyReturn':
+      case 'monthlyReturn':
+        return formatReturn(fund[key])
+      case 'investors':
+        return formatNumber(fund.investors)
+      case 'marketCap':
+        return formatMarketCap(fund.marketCap)
+      default:
+        return '-'
+    }
+  }
+
+  function cellClass(fund, key) {
+    const classes = []
+    const col = COLUMNS.find((c) => c.key === key)
+    if (col?.align === 'right') classes.push('text-right')
+    if (['dailyReturn', 'weeklyReturn', 'monthlyReturn'].includes(key)) {
+      classes.push(returnClass(fund[key]))
+    }
+    return classes.join(' ')
+  }
+
   return (
     <div className="fund-table-wrapper">
       <table className="fund-table">
         <thead>
           <tr>
-            <th>Kod</th>
-            <th>Fon Adı</th>
-            <th className="text-right">Fiyat</th>
-            <th className="text-right">Günlük</th>
-            <th className="text-right">Haftalık</th>
-            <th className="text-right">Aylık</th>
-            <th className="text-right">Yatırımcı</th>
-            <th className="text-right">Piyasa Değeri</th>
+            {COLUMNS.map((col) => (
+              <th
+                key={col.key}
+                className={`${col.align === 'right' ? 'text-right' : ''} sortable`}
+                onClick={() => handleSort(col.key)}
+              >
+                {col.label}
+                {sortKey === col.key && (
+                  <span className="sort-arrow">{sortDir === 'asc' ? ' ▲' : ' ▼'}</span>
+                )}
+              </th>
+            ))}
           </tr>
         </thead>
         <tbody>
-          {funds.map((fund) => (
+          {sorted.map((fund) => (
             <tr key={fund.fundCode}>
-              <td>
-                <Link to={`/fund/${fund.fundCode}`} className="fund-code">
-                  {fund.fundCode}
-                </Link>
-              </td>
-              <td className="fund-name">{fund.fundName}</td>
-              <td className="text-right">{formatPrice(fund.price)}</td>
-              <td className={`text-right ${returnClass(fund.dailyReturn)}`}>
-                {formatReturn(fund.dailyReturn)}
-              </td>
-              <td className={`text-right ${returnClass(fund.weeklyReturn)}`}>
-                {formatReturn(fund.weeklyReturn)}
-              </td>
-              <td className={`text-right ${returnClass(fund.monthlyReturn)}`}>
-                {formatReturn(fund.monthlyReturn)}
-              </td>
-              <td className="text-right">{formatNumber(fund.investors)}</td>
-              <td className="text-right">{formatMarketCap(fund.marketCap)}</td>
+              {COLUMNS.map((col) => (
+                <td key={col.key} className={cellClass(fund, col.key)}>
+                  {renderCell(fund, col.key)}
+                </td>
+              ))}
             </tr>
           ))}
         </tbody>

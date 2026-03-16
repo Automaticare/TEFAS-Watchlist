@@ -27,6 +27,19 @@
   top: 0;
 }
 
+.fund-table th.sortable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.fund-table th.sortable:hover {
+  color: var(--text);
+}
+
+.sort-arrow {
+  font-size: 10px;
+}
+
 .fund-table tbody tr:hover {
   background: rgba(13, 110, 253, 0.04);
 }
@@ -42,6 +55,7 @@
 }
 
 .fund-name {
+  display: inline-block;
   max-width: 300px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -69,4 +83,20 @@
 .return-negative {
   color: var(--negative);
   font-weight: 600;
+}
+
+/* Responsive: dar ekranlarda yatay scroll */
+@media (max-width: 768px) {
+  .fund-table {
+    font-size: 12px;
+  }
+
+  .fund-table th,
+  .fund-table td {
+    padding: 8px 6px;
+  }
+
+  .fund-name {
+    max-width: 150px;
+  }
 }
