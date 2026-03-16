@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import FundSummaryCard from '../components/FundSummaryCard'
 import AllocationChart from '../components/AllocationChart'
+import PriceChart from '../components/PriceChart'
 import { getFundHistory, getFundAllocation } from '../services/tefasApi'
 import { transformAllocationData } from '../services/firestoreWrite'
 
@@ -13,6 +14,7 @@ function calcReturn(currentPrice, oldPrice) {
 function FundDetail() {
   const { fundCode } = useParams()
   const [fund, setFund] = useState(null)
+  const [priceHistory, setPriceHistory] = useState([])
   const [allocation, setAllocation] = useState(null)
   const [loading, setLoading] = useState(true)
   const [allocLoading, setAllocLoading] = useState(true)
@@ -35,6 +37,8 @@ function FundDetail() {
           setError('Bu fon için veri bulunamadı.')
           return
         }
+
+        setPriceHistory(history)
 
         const sorted = [...history].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
         const latest = sorted[0]
@@ -93,6 +97,7 @@ function FundDetail() {
     <div>
       <Link to="/" className="back-link">← Watchlist'e Dön</Link>
       <FundSummaryCard fund={fund} loading={loading} error={error} />
+      <PriceChart history={priceHistory} loading={loading} error={error} />
       <AllocationChart allocation={allocation} loading={allocLoading} error={allocError} />
     </div>
   )
