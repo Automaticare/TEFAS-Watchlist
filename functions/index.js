@@ -1,8 +1,18 @@
-import { onRequest } from 'firebase-functions/v2/https'
+import { https } from 'firebase-functions'
 
 const TEFAS_BASE_URL = 'https://www.tefas.gov.tr/api/DB'
 
-export const tefasProxy = onRequest({ cors: true, region: 'europe-west1' }, async (req, res) => {
+export const tefasProxy = https.onRequest((req, res) => {
+  // CORS headers
+  res.set('Access-Control-Allow-Origin', '*')
+  res.set('Access-Control-Allow-Methods', 'POST, OPTIONS')
+  res.set('Access-Control-Allow-Headers', 'Content-Type')
+
+  if (req.method === 'OPTIONS') {
+    res.status(204).send('')
+    return
+  }
+
   if (req.method !== 'POST') {
     res.status(405).send('Method Not Allowed')
     return
@@ -20,22 +30,22 @@ export const tefasProxy = onRequest({ cors: true, region: 'europe-west1' }, asyn
     return
   }
 
-  try {
-    const response = await fetch(`${TEFAS_BASE_URL}/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Origin': 'https://www.tefas.gov.tr',
-        'Referer': 'https://www.tefas.gov.tr/TarihselVeriler.aspx',
-      },
-      body: req.body,
+  fetch(`${TEFAS_BASE_URL}/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'X-Requested-With': 'XMLHttpRequest',
+      'Origin': 'https://www.tefas.gov.tr',
+      'Referer': 'https://www.tefas.gov.tr/TarihselVeriler.aspx',
+    },
+    body: req.rawBody,
+  })
+    .then((response) => response.text())
+    .then((data) => {
+      res.set('Cache-Control', 'public, max-age=300')
+      res.status(200).send(data)
     })
-
-    const data = await response.text()
-    res.set('Cache-Control', 'public, max-age=300')
-    res.status(response.status).send(data)
-  } catch (error) {
-    res.status(500).send('TEFAS API request failed')
-  }
+    .catch(() => {
+      res.status(500).send('TEFAS API request failed')
+    })
 })

@@ -12,10 +12,7 @@
     "rewrites": [
       {
         "source": "/tefasProxy",
-        "function": {
-          "functionId": "tefasProxy",
-          "region": "europe-west1"
-        }
+        "function": "tefasProxy"
       },
       {
         "source": "**",
