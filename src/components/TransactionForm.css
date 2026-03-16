@@ -1,0 +1,140 @@
+.transaction-form {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.transaction-form-title {
+  font-size: 16px;
+  margin-bottom: 16px;
+  color: var(--text);
+}
+
+.tx-form-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.tx-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.tx-form-group label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.tx-fund-group {
+  flex: 1;
+  min-width: 180px;
+}
+
+.tx-fund-autocomplete {
+  position: relative;
+}
+
+.tx-type-group {
+  min-width: 130px;
+}
+
+.tx-type-toggle {
+  display: flex;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.tx-type-btn {
+  flex: 1;
+  padding: 7px 12px;
+  border: none;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.tx-type-btn:first-child {
+  border-right: 1px solid var(--border);
+}
+
+.tx-type-active-buy {
+  background: var(--positive);
+  color: #fff;
+}
+
+.tx-type-active-sell {
+  background: var(--negative);
+  color: #fff;
+}
+
+.tx-input {
+  padding: 7px 10px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  background: var(--card-bg);
+  color: var(--text);
+  width: 100%;
+  min-width: 0;
+}
+
+.tx-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.tx-input:disabled {
+  opacity: 0.6;
+}
+
+.tx-submit-group {
+  flex-shrink: 0;
+}
+
+.tx-submit-btn {
+  padding: 7px 20px;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.tx-submit-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.tx-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tx-message {
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+/* Responsive: dar ekranda alt alta */
+@media (max-width: 768px) {
+  .tx-form-row {
+    flex-direction: column;
+  }
+
+  .tx-form-group {
+    width: 100%;
+  }
+
+  .tx-type-group {
+    min-width: unset;
+  }
+}
