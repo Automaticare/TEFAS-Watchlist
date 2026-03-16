@@ -180,17 +180,17 @@ function Watchlist() {
           className={`tab-btn ${activeTab === 'overview' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('overview')}
         >
-          Genel Bakış
+          Portföy
         </button>
         <button
           className={`tab-btn ${activeTab === 'portfolio' ? 'tab-active' : ''}`}
           onClick={() => setActiveTab('portfolio')}
         >
-          Portföy
+          Alım/Satım
         </button>
       </div>
 
-      {/* Genel Bakış Tab */}
+      {/* Portföy Tab */}
       {activeTab === 'overview' && (
         <div>
           {!hasPortfolio && !txLoading ? (
@@ -200,7 +200,7 @@ function Watchlist() {
                 className="empty-state-btn"
                 onClick={() => setActiveTab('portfolio')}
               >
-                Portföy tab'ından ilk alımınızı ekleyin
+                Alım/Satım tab'ından ilk alımınızı ekleyin
               </button>
             </div>
           ) : (
@@ -217,7 +217,7 @@ function Watchlist() {
         </div>
       )}
 
-      {/* Portföy Tab */}
+      {/* Alım/Satım Tab */}
       {activeTab === 'portfolio' && (
         <div>
           <TransactionForm fundList={fundList} onSaved={fetchTransactions} />
