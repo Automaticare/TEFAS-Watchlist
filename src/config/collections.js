@@ -20,7 +20,19 @@
 export const COLLECTIONS = {
   WATCHLIST: 'watchlist',
   HISTORY: 'history',
+  TRANSACTIONS: 'transactions',
 }
+
+/**
+ * transactions (koleksiyon)
+ *   └── {autoId} (doküman)
+ *       ├── fundCode: "TTA"
+ *       ├── type: "buy" | "sell"
+ *       ├── quantity: 100        (pay adedi)
+ *       ├── pricePerUnit: 0.699  (birim fiyat, TL)
+ *       ├── date: Timestamp      (işlem tarihi)
+ *       ├── createdAt: Timestamp
+ */
 
 export const DEFAULT_FUNDS = [
   'TTA', 'TTE', 'TBV', 'TI6', 'AES', 'YZG',
