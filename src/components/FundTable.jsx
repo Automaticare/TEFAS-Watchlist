@@ -22,6 +22,19 @@ function formatMarketCap(value) {
   return formatNumber(value)
 }
 
+function formatReturn(value) {
+  if (value == null) return '-'
+  const prefix = value > 0 ? '+' : ''
+  return `${prefix}${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
+}
+
+function returnClass(value) {
+  if (value == null) return ''
+  if (value > 0) return 'return-positive'
+  if (value < 0) return 'return-negative'
+  return ''
+}
+
 function FundTable({ funds, loading, error }) {
   if (loading) {
     return <p className="fund-table-status">Veriler yükleniyor...</p>
@@ -43,6 +56,9 @@ function FundTable({ funds, loading, error }) {
             <th>Kod</th>
             <th>Fon Adı</th>
             <th className="text-right">Fiyat</th>
+            <th className="text-right">Günlük</th>
+            <th className="text-right">Haftalık</th>
+            <th className="text-right">Aylık</th>
             <th className="text-right">Yatırımcı</th>
             <th className="text-right">Piyasa Değeri</th>
           </tr>
@@ -57,6 +73,15 @@ function FundTable({ funds, loading, error }) {
               </td>
               <td className="fund-name">{fund.fundName}</td>
               <td className="text-right">{formatPrice(fund.price)}</td>
+              <td className={`text-right ${returnClass(fund.dailyReturn)}`}>
+                {formatReturn(fund.dailyReturn)}
+              </td>
+              <td className={`text-right ${returnClass(fund.weeklyReturn)}`}>
+                {formatReturn(fund.weeklyReturn)}
+              </td>
+              <td className={`text-right ${returnClass(fund.monthlyReturn)}`}>
+                {formatReturn(fund.monthlyReturn)}
+              </td>
               <td className="text-right">{formatNumber(fund.investors)}</td>
               <td className="text-right">{formatMarketCap(fund.marketCap)}</td>
             </tr>

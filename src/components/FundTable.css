@@ -60,3 +60,13 @@
 .fund-table-error {
   color: var(--negative);
 }
+
+.return-positive {
+  color: var(--positive);
+  font-weight: 600;
+}
+
+.return-negative {
+  color: var(--negative);
+  font-weight: 600;
+}

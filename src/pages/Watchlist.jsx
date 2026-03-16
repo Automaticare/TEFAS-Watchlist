@@ -1,7 +1,12 @@
 import { useState, useEffect } from 'react'
 import FundTable from '../components/FundTable'
-import { getMultipleFundsToday } from '../services/tefasApi'
+import { getFundHistory } from '../services/tefasApi'
 import { DEFAULT_FUNDS } from '../config/collections'
+
+function calcReturn(currentPrice, oldPrice) {
+  if (!currentPrice || !oldPrice) return null
+  return ((currentPrice - oldPrice) / oldPrice) * 100
+}
 
 function Watchlist() {
   const [funds, setFunds] = useState([])
@@ -12,17 +17,38 @@ function Watchlist() {
     async function fetchFunds() {
       try {
         setLoading(true)
-        const results = await getMultipleFundsToday(DEFAULT_FUNDS)
 
+        const today = new Date()
+        const thirtyDaysAgo = new Date()
+        thirtyDaysAgo.setDate(today.getDate() - 30)
+
+        const promises = DEFAULT_FUNDS.map(async (code) => {
+          const history = await getFundHistory(code, thirtyDaysAgo, today)
+          if (!history || history.length === 0) return null
+
+          // Veriler en yeniden eskiye sıralı gelebilir, tarihe göre sıralayalım
+          const sorted = [...history].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
+          const latest = sorted[0]
+          const prev = sorted[1] || null
+          const weekAgo = sorted.find((_, i) => i >= 5) || null
+          const monthAgo = sorted[sorted.length - 1] || null
+
+          return {
+            fundCode: code,
+            fundName: latest.FONUNVAN,
+            price: latest.FIYAT,
+            investors: latest.KISISAYISI,
+            marketCap: latest.PORTFOYBUYUKLUK,
+            dailyReturn: calcReturn(latest.FIYAT, prev?.FIYAT),
+            weeklyReturn: calcReturn(latest.FIYAT, weekAgo?.FIYAT),
+            monthlyReturn: calcReturn(latest.FIYAT, monthAgo?.FIYAT),
+          }
+        })
+
+        const results = await Promise.allSettled(promises)
         const fundData = results
-          .filter((r) => r.data !== null)
-          .map((r) => ({
-            fundCode: r.fundCode,
-            fundName: r.data.FONUNVAN,
-            price: r.data.FIYAT,
-            investors: r.data.KISISAYISI,
-            marketCap: r.data.PORTFOYBUYUKLUK,
-          }))
+          .filter((r) => r.status === 'fulfilled' && r.value !== null)
+          .map((r) => r.value)
 
         setFunds(fundData)
       } catch (err) {
