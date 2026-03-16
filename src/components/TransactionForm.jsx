@@ -2,13 +2,15 @@ import { useState, useRef, useEffect } from 'react'
 import { addTransaction } from '../services/portfolioService'
 import './TransactionForm.css'
 
+const TODAY = new Date().toISOString().split('T')[0]
+
 function TransactionForm({ fundList, onSaved }) {
   const [type, setType] = useState('buy')
   const [fundQuery, setFundQuery] = useState('')
   const [selectedFund, setSelectedFund] = useState(null)
   const [quantity, setQuantity] = useState('')
   const [pricePerUnit, setPricePerUnit] = useState('')
-  const [date, setDate] = useState(() => new Date().toISOString().split('T')[0])
+  const [date, setDate] = useState(TODAY)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
   const [showDropdown, setShowDropdown] = useState(false)
@@ -89,6 +91,10 @@ function TransactionForm({ fundList, onSaved }) {
       setMessage({ type: 'error', text: 'Tarih seçiniz.' })
       return
     }
+    if (date > TODAY) {
+      setMessage({ type: 'error', text: 'İleri tarihli işlem eklenemez.' })
+      return
+    }
 
     setSaving(true)
     try {
@@ -108,7 +114,7 @@ function TransactionForm({ fundList, onSaved }) {
       setSelectedFund(null)
       setQuantity('')
       setPricePerUnit('')
-      setDate(new Date().toISOString().split('T')[0])
+      setDate(TODAY)
 
       if (onSaved) onSaved()
     } catch {
@@ -209,6 +215,7 @@ function TransactionForm({ fundList, onSaved }) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
+              max={TODAY}
               className="tx-input"
               disabled={saving}
             />
