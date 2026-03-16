@@ -57,3 +57,51 @@
 .message-success {
   color: var(--positive);
 }
+
+/* Autocomplete */
+.add-fund-autocomplete {
+  position: relative;
+}
+
+.autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 4px 4px;
+  list-style: none;
+  z-index: 100;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.autocomplete-item:hover,
+.autocomplete-highlight {
+  background: #f0f4ff;
+}
+
+.autocomplete-code {
+  font-weight: 600;
+  min-width: 40px;
+  color: var(--accent);
+}
+
+.autocomplete-name {
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

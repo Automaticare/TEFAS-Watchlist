@@ -6,6 +6,7 @@ import DateRangeSelector from '../components/DateRangeSelector'
 import AddFundForm from '../components/AddFundForm'
 import { getFundHistory } from '../services/tefasApi'
 import { useWatchlist } from '../hooks/useWatchlist'
+import { useFundList } from '../hooks/useFundList'
 
 function calcReturn(currentPrice, oldPrice) {
   if (!currentPrice || !oldPrice) return null
@@ -14,6 +15,7 @@ function calcReturn(currentPrice, oldPrice) {
 
 function Watchlist() {
   const { fundCodes, addFund, removeFund, resetToDefaults } = useWatchlist()
+  const { funds: fundList } = useFundList()
   const [funds, setFunds] = useState([])
   const [fundsHistory, setFundsHistory] = useState([])
   const [loading, setLoading] = useState(true)
@@ -79,7 +81,7 @@ function Watchlist() {
         <DateRangeSelector value={days} onChange={setDays} />
       </div>
       <div className="watchlist-actions">
-        <AddFundForm onAdd={addFund} existingCodes={fundCodes} />
+        <AddFundForm onAdd={addFund} existingCodes={fundCodes} fundList={fundList} />
         <button className="reset-btn" onClick={resetToDefaults}>
           Varsayılana Sıfırla
         </button>
