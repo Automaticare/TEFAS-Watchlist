@@ -124,6 +124,57 @@
   font-size: 13px;
 }
 
+/* Autocomplete Dropdown */
+.tx-fund-autocomplete .autocomplete-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  min-width: 360px;
+  max-height: 240px;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  list-style: none;
+  z-index: 100;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.tx-fund-autocomplete .autocomplete-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-size: 13px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.tx-fund-autocomplete .autocomplete-item:last-child {
+  border-bottom: none;
+}
+
+.tx-fund-autocomplete .autocomplete-item:hover,
+.tx-fund-autocomplete .autocomplete-highlight {
+  background: #f0f4ff;
+}
+
+.tx-fund-autocomplete .autocomplete-code {
+  font-weight: 700;
+  min-width: 44px;
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.tx-fund-autocomplete .autocomplete-name {
+  color: var(--text-secondary);
+  font-size: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Responsive: dar ekranda alt alta */
 @media (max-width: 768px) {
   .tx-form-row {

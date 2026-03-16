@@ -162,9 +162,11 @@ function Watchlist() {
     setDeleting(txId)
     try {
       await deleteTransaction(txId)
-      await fetchTransactions()
+      // Silinen işlemi hemen UI'dan kaldır
+      setTransactions((prev) => prev.filter((tx) => tx.id !== txId))
     } catch {
-      // silme hatası
+      // Hata olursa Firestore'dan tekrar çek
+      await fetchTransactions()
     } finally {
       setDeleting(null)
     }
