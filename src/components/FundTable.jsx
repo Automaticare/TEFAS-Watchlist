@@ -29,6 +29,16 @@ function formatReturn(value) {
   return `${prefix}${value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}%`
 }
 
+function formatTL(value) {
+  if (value == null) return '-'
+  return value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL'
+}
+
+function formatQuantity(value) {
+  if (value == null) return '-'
+  return value.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+}
+
 function returnClass(value) {
   if (value == null) return ''
   if (value > 0) return 'return-positive'
@@ -43,8 +53,10 @@ const COLUMNS = [
   { key: 'dailyReturn', label: 'Günlük', align: 'right' },
   { key: 'weeklyReturn', label: 'Haftalık', align: 'right' },
   { key: 'monthlyReturn', label: 'Aylık', align: 'right' },
-  { key: 'investors', label: 'Yatırımcı', align: 'right' },
-  { key: 'marketCap', label: 'Piyasa Değeri', align: 'right' },
+  { key: 'quantity', label: 'Adet', align: 'right' },
+  { key: 'avgCost', label: 'Ort. Maliyet', align: 'right' },
+  { key: 'positionValue', label: 'Pozisyon', align: 'right' },
+  { key: 'pnl', label: 'Kar/Zarar', align: 'right' },
 ]
 
 function sortFunds(funds, sortKey, sortDir) {
@@ -62,7 +74,7 @@ function sortFunds(funds, sortKey, sortDir) {
   })
 }
 
-function FundTable({ funds, loading, error, onRemove }) {
+function FundTable({ funds, loading, error }) {
   const [sortKey, setSortKey] = useState('fundCode')
   const [sortDir, setSortDir] = useState('asc')
 
@@ -84,7 +96,7 @@ function FundTable({ funds, loading, error, onRemove }) {
   }
 
   if (!funds || funds.length === 0) {
-    return <p className="fund-table-status">Watchlist'te fon bulunamadı.</p>
+    return null
   }
 
   const sorted = sortFunds(funds, sortKey, sortDir)
@@ -109,6 +121,25 @@ function FundTable({ funds, loading, error, onRemove }) {
         return formatNumber(fund.investors)
       case 'marketCap':
         return formatMarketCap(fund.marketCap)
+      case 'quantity':
+        return formatQuantity(fund.quantity)
+      case 'avgCost':
+        return formatPrice(fund.avgCost)
+      case 'positionValue':
+        return formatTL(fund.positionValue)
+      case 'pnl': {
+        const val = fund.pnl
+        if (val == null) return '-'
+        const pct = fund.pnlPct
+        return (
+          <span>
+            {formatTL(val)}
+            {pct != null && (
+              <span className="pnl-pct"> ({formatReturn(pct)})</span>
+            )}
+          </span>
+        )
+      }
       default:
         return '-'
     }
@@ -120,6 +151,9 @@ function FundTable({ funds, loading, error, onRemove }) {
     if (col?.align === 'right') classes.push('text-right')
     if (['dailyReturn', 'weeklyReturn', 'monthlyReturn'].includes(key)) {
       classes.push(returnClass(fund[key]))
+    }
+    if (key === 'pnl') {
+      classes.push(returnClass(fund.pnl))
     }
     return classes.join(' ')
   }
@@ -141,7 +175,6 @@ function FundTable({ funds, loading, error, onRemove }) {
                 )}
               </th>
             ))}
-            {onRemove && <th className="text-center"></th>}
           </tr>
         </thead>
         <tbody>
@@ -152,17 +185,6 @@ function FundTable({ funds, loading, error, onRemove }) {
                   {renderCell(fund, col.key)}
                 </td>
               ))}
-              {onRemove && (
-                <td className="text-center">
-                  <button
-                    className="remove-fund-btn"
-                    onClick={() => onRemove(fund.fundCode)}
-                    title={`${fund.fundCode} fonunu çıkar`}
-                  >
-                    ✕
-                  </button>
-                </td>
-              )}
             </tr>
           ))}
         </tbody>

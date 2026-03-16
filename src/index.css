@@ -124,3 +124,28 @@
 .back-link:hover {
   text-decoration: underline;
 }
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+}
+
+.empty-state-text {
+  color: var(--text-secondary);
+  font-size: 16px;
+  margin-bottom: 16px;
+}
+
+.empty-state-btn {
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.empty-state-btn:hover {
+  background: var(--accent-hover);
+}

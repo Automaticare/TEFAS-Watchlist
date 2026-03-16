@@ -8,7 +8,6 @@ import TransactionForm from '../components/TransactionForm'
 import { getFundHistory } from '../services/tefasApi'
 import { getAllTransactions, deleteTransaction, calcPortfolioSummary } from '../services/portfolioService'
 import { useFundList } from '../hooks/useFundList'
-import { DEFAULT_FUNDS } from '../config/collections'
 import '../pages/Portfolio.css'
 
 function calcReturn(currentPrice, oldPrice) {
@@ -34,7 +33,7 @@ function formatTL(val) {
 
 function Watchlist() {
   const { funds: fundList } = useFundList()
-  const [activeTab, setActiveTab] = useState('watchlist')
+  const [activeTab, setActiveTab] = useState('overview')
   const [funds, setFunds] = useState([])
   const [fundsHistory, setFundsHistory] = useState([])
   const [loading, setLoading] = useState(true)
@@ -62,9 +61,9 @@ function Watchlist() {
     fetchTransactions()
   }, [fetchTransactions])
 
-  // Watchlist fon kodları: portföyde payı olan fonlar, yoksa default liste
-  const fundCodes = useMemo(() => {
-    if (transactions.length === 0) return DEFAULT_FUNDS
+  // Portföy özeti: fon bazlı net adet, maliyet
+  const portfolioMap = useMemo(() => {
+    if (transactions.length === 0) return new Map()
 
     const sorted = [...transactions].sort((a, b) => {
       const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date)
@@ -72,15 +71,27 @@ function Watchlist() {
       return dateA - dateB
     })
 
-    const summary = calcPortfolioSummary(sorted)
-    const activeFunds = Array.from(summary.values())
-      .filter((f) => f.netQuantity > 0)
-      .map((f) => f.fundCode)
-
-    return activeFunds.length > 0 ? activeFunds : DEFAULT_FUNDS
+    return calcPortfolioSummary(sorted)
   }, [transactions])
 
+  // Aktif fonlar (net adet > 0)
+  const fundCodes = useMemo(() => {
+    return Array.from(portfolioMap.values())
+      .filter((f) => f.netQuantity > 0)
+      .map((f) => f.fundCode)
+  }, [portfolioMap])
+
+  const hasPortfolio = fundCodes.length > 0
+
+  // Fon verilerini çek
   useEffect(() => {
+    if (!hasPortfolio) {
+      setFunds([])
+      setFundsHistory([])
+      setLoading(false)
+      return
+    }
+
     async function fetchFunds() {
       try {
         setLoading(true)
@@ -100,6 +111,15 @@ function Watchlist() {
           const weekAgo = sorted.find((_, i) => i >= 5) || null
           const monthAgo = sorted[sorted.length - 1] || null
 
+          // Portföy verileri
+          const portfolio = portfolioMap.get(code)
+          const quantity = portfolio?.netQuantity || 0
+          const avgCost = portfolio?.avgCost || 0
+          const positionValue = quantity * latest.FIYAT
+          const totalCost = portfolio?.totalCost || 0
+          const pnl = positionValue - totalCost
+          const pnlPct = totalCost > 0 ? (pnl / totalCost) * 100 : 0
+
           return {
             fundCode: code,
             fundName: latest.FONUNVAN,
@@ -109,6 +129,11 @@ function Watchlist() {
             dailyReturn: calcReturn(latest.FIYAT, prev?.FIYAT),
             weeklyReturn: calcReturn(latest.FIYAT, weekAgo?.FIYAT),
             monthlyReturn: calcReturn(latest.FIYAT, monthAgo?.FIYAT),
+            quantity,
+            avgCost,
+            positionValue,
+            pnl,
+            pnlPct,
             history,
           }
         })
@@ -130,7 +155,7 @@ function Watchlist() {
     }
 
     fetchFunds()
-  }, [days, fundCodes])
+  }, [days, fundCodes, hasPortfolio, portfolioMap])
 
   async function handleDeleteTx(txId) {
     if (deleting) return
@@ -150,10 +175,10 @@ function Watchlist() {
       {/* Tab Bar */}
       <div className="tab-bar">
         <button
-          className={`tab-btn ${activeTab === 'watchlist' ? 'tab-active' : ''}`}
-          onClick={() => setActiveTab('watchlist')}
+          className={`tab-btn ${activeTab === 'overview' ? 'tab-active' : ''}`}
+          onClick={() => setActiveTab('overview')}
         >
-          Watchlist
+          Genel Bakış
         </button>
         <button
           className={`tab-btn ${activeTab === 'portfolio' ? 'tab-active' : ''}`}
@@ -163,23 +188,36 @@ function Watchlist() {
         </button>
       </div>
 
-      {/* Watchlist Tab */}
-      {activeTab === 'watchlist' && (
+      {/* Genel Bakış Tab */}
+      {activeTab === 'overview' && (
         <div>
-          <div className="watchlist-actions">
-            <DateRangeSelector value={days} onChange={setDays} />
-          </div>
-          <FundTable funds={funds} loading={loading} error={error} />
-          <ReturnComparisonChart funds={funds} loading={loading} error={error} />
-          <MultiPriceChart fundsHistory={fundsHistory} loading={loading} error={error} />
+          {!hasPortfolio && !txLoading ? (
+            <div className="empty-state">
+              <p className="empty-state-text">Henüz portföyünüzde fon yok.</p>
+              <button
+                className="empty-state-btn"
+                onClick={() => setActiveTab('portfolio')}
+              >
+                Portföy tab'ından ilk alımınızı ekleyin
+              </button>
+            </div>
+          ) : (
+            <>
+              <PortfolioSummary transactions={transactions} />
+              <div className="watchlist-actions">
+                <DateRangeSelector value={days} onChange={setDays} />
+              </div>
+              <FundTable funds={funds} loading={loading} error={error} />
+              <ReturnComparisonChart funds={funds} loading={loading} error={error} />
+              <MultiPriceChart fundsHistory={fundsHistory} loading={loading} error={error} />
+            </>
+          )}
         </div>
       )}
 
       {/* Portföy Tab */}
       {activeTab === 'portfolio' && (
         <div>
-          <PortfolioSummary transactions={transactions} />
-
           <TransactionForm fundList={fundList} onSaved={fetchTransactions} />
 
           <div className="tx-history-card">
