@@ -1,118 +1,75 @@
 # TEFAS Watchlist
 
-Takasbank TEFAS üzerindeki fonları takip etmek için oluşturulmuş kişisel bir watchlist uygulaması.
+A personal fund tracking application for monitoring funds on Takasbank TEFAS (Turkey Electronic Fund Trading Platform).
 
-## Proje Amacı
+**Live:** [tefas-watchlist.web.app](https://tefas-watchlist.web.app)
 
-Belirli bir kullanıcının portföyündeki ve ilgilendiği TEFAS fonlarını tek bir panelden izleyebilmesini sağlamak. Uygulama günlük fon verilerini TEFAS'ın sitesinden çekerek aşağıdaki bilgileri sunar:
+## Features
 
-- **Günlük fiyat** (birim pay değeri)
-- **Getiri bilgileri** (günlük, haftalık, aylık)
-- **Toplam yatırımcı sayısı**
-- **Portföy dağılımı** (hisse, tahvil, altın, döviz vb.)
+- **Portfolio Overview** — Track your fund positions with real-time prices, daily/weekly/monthly returns, position value, and P&L
+- **Buy/Sell Records** — Log fund transactions with quantity, price per unit, and date
+- **Fund Search** — Autocomplete search across all TEFAS funds by code or name
+- **Charts** — Return comparison bar chart and multi-fund price chart with base-100 normalization
+- **Fund Detail** — Individual fund page with price history chart and portfolio allocation donut chart
+- **Authentication** — Email/password login (single user, created via Firebase Console)
 
-## Takip Edilen Fonlar
+## Tech Stack
 
-| Kod | Fon Adı |
-|-----|---------|
-| TTA | İş Portföy Altın Fonu |
-| TTE | İş Portföy BIST Teknoloji Ağırlıklı Sınırlı Pay Fonu |
-| TBV | İş Portföy Özel Sektör Borçlanma Araçları Fonu |
-| TI6 | İş Portföy Borçlanma Araçları Fonu |
-| AES | Ak Portföy Petrol Yabancı BYF Fon Sepeti Fonu |
-| YZG | Yapı Kredi Portföy Yabancı Teknoloji Sektörü Hisse Senedi Fonu |
-| TGE | İş Portföy Emtia Yabancı BYF Fon Sepeti Fonu |
-| PHE | Pusula Portföy Hisse Senedi Fonu |
-| TI2 | İş Portföy Hisse Senedi Fonu |
-| KKH | İş Portföy Dengeli Fon |
-| BIO | İş Portföy Sürdürülebilir Hisse Senedi Fonu |
-| IPJ | İş Portföy Elektrikli Araçlar Karma Fon |
-| BHF | Pardus Portföy Birinci Hisse Senedi Fonu |
-
-> Not: Fon listesi uygulama içinden düzenlenebilir olacaktır.
-
-## Teknoloji Yığını
-
-| Katman | Teknoloji |
-|--------|-----------|
+| Layer | Technology |
+|-------|-----------|
 | Frontend | React (Vite) |
-| Tablo & Grafik | Belirlenecek (Recharts, Chart.js vb.) |
-| Backend / DB | Firebase (Firestore + Hosting) |
-| Veri Kaynağı | TEFAS sitesi (dahili API endpointleri) |
+| Charts | Recharts |
+| Backend / DB | Firebase (Firestore + Hosting + Cloud Functions + Auth) |
+| Data Source | TEFAS internal API (`tefas.gov.tr/api/DB/`) |
 
-## Veri Kaynağı
+## Data Source
 
-TEFAS'ın resmi bir public API'ı bulunmamaktadır. Ancak `tefas.gov.tr` sitesinin arka planında kullandığı dahili endpointler JSON formatında veri döner. Bu projede bu endpointler kullanılacaktır:
+TEFAS does not provide an official public API. This project uses the internal endpoints that power the TEFAS website:
 
-- **Base URL:** `https://www.tefas.gov.tr/api/DB/`
-- **Endpoint:** `BindHistoryInfo` (fiyat, yatırımcı sayısı, piyasa değeri)
-- **Endpoint:** `BindHistoryAllocation` (portföy dağılımı)
-- **Metod:** POST (`application/x-www-form-urlencoded`)
-- **Tarih aralığı limiti:** Tek sorguda maksimum 90 gün
-- **Fon tipleri:** YAT (Yatırım Fonları), EMK (Emeklilik Fonları), BYF (Borsa Yatırım Fonları)
+- **Endpoints:** `BindHistoryInfo` (price, investors, market cap), `BindHistoryAllocation` (portfolio allocation)
+- **Method:** POST (`application/x-www-form-urlencoded`)
+- **Date range limit:** Max 90 days per request (automatic chunking)
+- **Fund types:** YAT, EMK, BYF — auto-detected per fund
+- **CORS:** Vite proxy in dev, Firebase Cloud Function proxy in production
 
-Ayrıca npm'de mevcut olan `@firstthumb/tefas-api` paketi de değerlendirilecektir.
+## Setup
 
-## Maliyet
+```bash
+# Install dependencies
+npm install
 
-Proje tamamen **ücretsiz** çalışacak şekilde tasarlanmıştır:
+# Copy environment template and fill in Firebase config
+cp .env.example .env
 
-- **Firebase Spark (Ücretsiz) planı** kullanılacaktır
-  - Firestore: 1 GiB depolama, 50K okuma/gün, 20K yazma/gün
-  - Hosting: 10 GB/ay transfer, 1 GB depolama
-- TEFAS endpointleri herkese açıktır, API anahtarı gerektirmez
+# Start dev server
+npm run dev
+```
 
-## Geliştirme Planı (Issue Bazlı)
+### Firebase Setup
 
-### Issue #1 — Proje Altyapısı
-React projesinin oluşturulması ve temel yapının kurulması.
-- [ ] React projesi oluşturma (Vite)
-- [ ] Klasör yapısını belirleme
-- [ ] Firebase projesini oluşturma ve config ekleme
-- [ ] Temel routing yapısı
+1. Create a Firebase project at [console.firebase.google.com](https://console.firebase.google.com)
+2. Enable **Firestore Database**, **Authentication** (Email/Password), and **Hosting**
+3. Create a user in Firebase Console → Authentication → Users
+4. Upgrade to Blaze plan (required for Cloud Functions, stays within free tier)
+5. Deploy Cloud Function: `cd functions && npm install && cd .. && firebase deploy --only functions`
 
-### Issue #2 — TEFAS Veri Servisi
-TEFAS endpointlerinden veri çekecek servis katmanının yazılması.
-- [ ] TEFAS API client (fiyat, getiri, yatırımcı sayısı)
-- [ ] Portföy dağılımı verisi çekme
-- [ ] Hata yönetimi ve rate limiting
+### Environment Variables
 
-### Issue #3 — Firestore Veri Modeli & Entegrasyonu
-Veritabanı şeması ve veri yazma/okuma işlemleri.
-- [ ] Firestore koleksiyon yapısı tasarımı
-- [ ] Fon verilerini Firestore'a yazma
-- [ ] Firestore'dan okuma servisleri
+```
+VITE_FIREBASE_API_KEY=
+VITE_FIREBASE_AUTH_DOMAIN=
+VITE_FIREBASE_PROJECT_ID=
+VITE_FIREBASE_STORAGE_BUCKET=
+VITE_FIREBASE_MESSAGING_SENDER_ID=
+VITE_FIREBASE_APP_ID=
+```
 
-### Issue #4 — Watchlist Tablosu
-Ana sayfa: fonların tablo halinde listelenmesi.
-- [ ] Fon listesi tablosu (fiyat, günlük/haftalık/aylık getiri, yatırımcı sayısı)
-- [ ] Sıralama ve filtreleme
-- [ ] Responsive tasarım
+## Deploy
 
-### Issue #5 — Fon Detay Sayfası
-Tek bir fonun detaylı bilgilerini gösteren sayfa.
-- [ ] Fon özet kartı
-- [ ] Portföy dağılımı grafiği (donut chart)
-- [ ] Tarihsel fiyat grafiği (line chart)
+```bash
+npm run build && firebase deploy
+```
 
-### Issue #6 — Grafik & Karşılaştırma
-Fonlar arası karşılaştırma ve gelişmiş grafikler.
-- [ ] Getiri karşılaştırma grafiği (bar chart)
-- [ ] Çoklu fon fiyat karşılaştırması (multi-line chart)
-- [ ] Tarih aralığı seçici
-
-### Issue #7 — Fon Yönetimi
-Watchlist'e fon ekleme ve çıkarma.
-- [ ] Fon arama (TEFAS'tan kod ile arama)
-- [ ] Fon ekleme / çıkarma
-- [ ] Varsayılan fon listesi
-
-### Issue #8 — Deploy
-Firebase Hosting üzerinden yayına alma.
-- [ ] Build optimizasyonu
-- [ ] Firebase Hosting deploy
-- [ ] README güncelleme (canlı link)
-
-## Lisans
+## License
 
 MIT
