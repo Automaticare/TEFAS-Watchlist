@@ -1,9 +1,11 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { signInWithEmailAndPassword } from 'firebase/auth'
 import { auth } from '../config/firebase'
 import './Login.css'
 
 function Login() {
+  const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState(null)
@@ -16,6 +18,7 @@ function Login() {
 
     try {
       await signInWithEmailAndPassword(auth, email, password)
+      navigate('/', { replace: true })
     } catch (err) {
       switch (err.code) {
         case 'auth/invalid-credential':
