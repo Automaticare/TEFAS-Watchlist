@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import FundTable from '../components/FundTable'
+import ReturnComparisonChart from '../components/ReturnComparisonChart'
 import { getFundHistory } from '../services/tefasApi'
 import { DEFAULT_FUNDS } from '../config/collections'
 
@@ -65,6 +66,7 @@ function Watchlist() {
     <div>
       <h2 style={{ marginBottom: '16px' }}>Watchlist</h2>
       <FundTable funds={funds} loading={loading} error={error} />
+      <ReturnComparisonChart funds={funds} loading={loading} error={error} />
     </div>
   )
 }
