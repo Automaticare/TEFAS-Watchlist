@@ -3,7 +3,6 @@ import { signOut } from 'firebase/auth'
 import { auth } from './config/firebase'
 import Watchlist from './pages/Watchlist'
 import FundDetail from './pages/FundDetail'
-import Portfolio from './pages/Portfolio'
 import Login from './pages/Login'
 import ProtectedRoute from './components/ProtectedRoute'
 import { useAuth } from './hooks/useAuth'
@@ -19,12 +18,9 @@ function AppContent() {
           <Link to="/" style={{ textDecoration: 'none', color: 'var(--text)' }}>
             <h1 style={{ fontSize: '24px', margin: 0 }}>TEFAS Watchlist</h1>
           </Link>
-          <nav style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <Link to="/portfolio" className="nav-link">Portföy</Link>
-            <button className="logout-btn" onClick={() => signOut(auth)}>
-              Çıkış Yap
-            </button>
-          </nav>
+          <button className="logout-btn" onClick={() => signOut(auth)}>
+            Çıkış Yap
+          </button>
         </header>
       )}
       <main style={{ padding: '24px 0' }}>
@@ -32,7 +28,6 @@ function AppContent() {
           <Route path="/login" element={<Login />} />
           <Route path="/" element={<ProtectedRoute><Watchlist /></ProtectedRoute>} />
           <Route path="/fund/:fundCode" element={<ProtectedRoute><FundDetail /></ProtectedRoute>} />
-          <Route path="/portfolio" element={<ProtectedRoute><Portfolio /></ProtectedRoute>} />
         </Routes>
       </main>
     </>

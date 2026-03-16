@@ -1,16 +1,36 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import FundTable from '../components/FundTable'
 import ReturnComparisonChart from '../components/ReturnComparisonChart'
 import MultiPriceChart from '../components/MultiPriceChart'
 import DateRangeSelector from '../components/DateRangeSelector'
 import AddFundForm from '../components/AddFundForm'
+import PortfolioSummary from '../components/PortfolioSummary'
+import TransactionForm from '../components/TransactionForm'
 import { getFundHistory } from '../services/tefasApi'
+import { getAllTransactions, deleteTransaction } from '../services/portfolioService'
 import { useWatchlist } from '../hooks/useWatchlist'
 import { useFundList } from '../hooks/useFundList'
+import '../pages/Portfolio.css'
 
 function calcReturn(currentPrice, oldPrice) {
   if (!currentPrice || !oldPrice) return null
   return ((currentPrice - oldPrice) / oldPrice) * 100
+}
+
+function formatDate(timestamp) {
+  if (!timestamp) return '-'
+  const d = timestamp.toDate ? timestamp.toDate() : new Date(timestamp)
+  return d.toLocaleDateString('tr-TR')
+}
+
+function formatPrice(val) {
+  if (val == null) return '-'
+  return val.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 6 })
+}
+
+function formatTL(val) {
+  if (val == null) return '-'
+  return val.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL'
 }
 
 function Watchlist() {
@@ -21,6 +41,11 @@ function Watchlist() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [days, setDays] = useState(30)
+
+  // Portföy state
+  const [transactions, setTransactions] = useState([])
+  const [txLoading, setTxLoading] = useState(true)
+  const [deleting, setDeleting] = useState(null)
 
   useEffect(() => {
     async function fetchFunds() {
@@ -74,8 +99,38 @@ function Watchlist() {
     fetchFunds()
   }, [days, fundCodes])
 
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setTxLoading(true)
+      const data = await getAllTransactions()
+      setTransactions(data)
+    } catch {
+      // Hata durumunda boş liste
+    } finally {
+      setTxLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchTransactions()
+  }, [fetchTransactions])
+
+  async function handleDeleteTx(txId) {
+    if (deleting) return
+    setDeleting(txId)
+    try {
+      await deleteTransaction(txId)
+      await fetchTransactions()
+    } catch {
+      // silme hatası
+    } finally {
+      setDeleting(null)
+    }
+  }
+
   return (
     <div>
+      {/* Watchlist Bölümü */}
       <div className="watchlist-header">
         <h2>Watchlist</h2>
         <DateRangeSelector value={days} onChange={setDays} />
@@ -89,6 +144,67 @@ function Watchlist() {
       <FundTable funds={funds} loading={loading} error={error} onRemove={removeFund} />
       <ReturnComparisonChart funds={funds} loading={loading} error={error} />
       <MultiPriceChart fundsHistory={fundsHistory} loading={loading} error={error} />
+
+      {/* Portföy Bölümü */}
+      <div className="watchlist-header" style={{ marginTop: 40 }}>
+        <h2>Portföy</h2>
+      </div>
+
+      <PortfolioSummary transactions={transactions} />
+
+      <TransactionForm fundList={fundList} onSaved={fetchTransactions} />
+
+      <div className="tx-history-card">
+        <h3 className="tx-history-title" style={{ padding: '16px 20px 12px', margin: 0 }}>İşlem Geçmişi</h3>
+
+        {txLoading ? (
+          <p className="tx-empty">Yükleniyor...</p>
+        ) : transactions.length === 0 ? (
+          <p className="tx-empty">Henüz işlem kaydı yok.</p>
+        ) : (
+          <div style={{ overflowX: 'auto' }}>
+            <table className="tx-table">
+              <thead>
+                <tr className="tx-table-head">
+                  <th className="tx-th">Tarih</th>
+                  <th className="tx-th">Tür</th>
+                  <th className="tx-th">Fon</th>
+                  <th className="tx-th tx-th-right">Adet</th>
+                  <th className="tx-th tx-th-right">Birim Fiyat</th>
+                  <th className="tx-th tx-th-right">Toplam</th>
+                  <th className="tx-th tx-th-center" style={{ width: 40 }}></th>
+                </tr>
+              </thead>
+              <tbody>
+                {transactions.map((tx) => (
+                  <tr key={tx.id} className="tx-table-row">
+                    <td className="tx-cell">{formatDate(tx.date)}</td>
+                    <td className="tx-cell">
+                      <span className={`tx-badge ${tx.type === 'buy' ? 'tx-badge-buy' : 'tx-badge-sell'}`}>
+                        {tx.type === 'buy' ? 'Alım' : 'Satım'}
+                      </span>
+                    </td>
+                    <td className="tx-cell tx-cell-bold">{tx.fundCode}</td>
+                    <td className="tx-cell tx-cell-right">{formatPrice(tx.quantity)}</td>
+                    <td className="tx-cell tx-cell-right">{formatPrice(tx.pricePerUnit)}</td>
+                    <td className="tx-cell tx-cell-right tx-cell-bold">{formatTL(tx.quantity * tx.pricePerUnit)}</td>
+                    <td className="tx-cell tx-cell-center">
+                      <button
+                        className="tx-delete-btn"
+                        onClick={() => handleDeleteTx(tx.id)}
+                        disabled={deleting === tx.id}
+                        title="Sil"
+                      >
+                        {deleting === tx.id ? '...' : '×'}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
