@@ -1,0 +1,25 @@
+.date-range-selector {
+  display: flex;
+  gap: 4px;
+}
+
+.range-btn {
+  padding: 6px 16px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.range-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.range-btn-active {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}

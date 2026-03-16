@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import FundTable from '../components/FundTable'
 import ReturnComparisonChart from '../components/ReturnComparisonChart'
 import MultiPriceChart from '../components/MultiPriceChart'
+import DateRangeSelector from '../components/DateRangeSelector'
 import { getFundHistory } from '../services/tefasApi'
 import { DEFAULT_FUNDS } from '../config/collections'
 
@@ -15,18 +16,20 @@ function Watchlist() {
   const [fundsHistory, setFundsHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [days, setDays] = useState(30)
 
   useEffect(() => {
     async function fetchFunds() {
       try {
         setLoading(true)
+        setError(null)
 
         const today = new Date()
-        const thirtyDaysAgo = new Date()
-        thirtyDaysAgo.setDate(today.getDate() - 30)
+        const startDate = new Date()
+        startDate.setDate(today.getDate() - days)
 
         const promises = DEFAULT_FUNDS.map(async (code) => {
-          const history = await getFundHistory(code, thirtyDaysAgo, today)
+          const history = await getFundHistory(code, startDate, today)
           if (!history || history.length === 0) return null
 
           const sorted = [...history].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
@@ -65,11 +68,14 @@ function Watchlist() {
     }
 
     fetchFunds()
-  }, [])
+  }, [days])
 
   return (
     <div>
-      <h2 style={{ marginBottom: '16px' }}>Watchlist</h2>
+      <div className="watchlist-header">
+        <h2>Watchlist</h2>
+        <DateRangeSelector value={days} onChange={setDays} />
+      </div>
       <FundTable funds={funds} loading={loading} error={error} />
       <ReturnComparisonChart funds={funds} loading={loading} error={error} />
       <MultiPriceChart fundsHistory={fundsHistory} loading={loading} error={error} />
