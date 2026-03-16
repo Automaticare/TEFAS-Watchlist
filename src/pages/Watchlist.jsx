@@ -3,8 +3,9 @@ import FundTable from '../components/FundTable'
 import ReturnComparisonChart from '../components/ReturnComparisonChart'
 import MultiPriceChart from '../components/MultiPriceChart'
 import DateRangeSelector from '../components/DateRangeSelector'
+import AddFundForm from '../components/AddFundForm'
 import { getFundHistory } from '../services/tefasApi'
-import { DEFAULT_FUNDS } from '../config/collections'
+import { useWatchlist } from '../hooks/useWatchlist'
 
 function calcReturn(currentPrice, oldPrice) {
   if (!currentPrice || !oldPrice) return null
@@ -12,6 +13,7 @@ function calcReturn(currentPrice, oldPrice) {
 }
 
 function Watchlist() {
+  const { fundCodes, addFund } = useWatchlist()
   const [funds, setFunds] = useState([])
   const [fundsHistory, setFundsHistory] = useState([])
   const [loading, setLoading] = useState(true)
@@ -28,7 +30,7 @@ function Watchlist() {
         const startDate = new Date()
         startDate.setDate(today.getDate() - days)
 
-        const promises = DEFAULT_FUNDS.map(async (code) => {
+        const promises = fundCodes.map(async (code) => {
           const history = await getFundHistory(code, startDate, today)
           if (!history || history.length === 0) return null
 
@@ -68,7 +70,7 @@ function Watchlist() {
     }
 
     fetchFunds()
-  }, [days])
+  }, [days, fundCodes])
 
   return (
     <div>
@@ -76,6 +78,7 @@ function Watchlist() {
         <h2>Watchlist</h2>
         <DateRangeSelector value={days} onChange={setDays} />
       </div>
+      <AddFundForm onAdd={addFund} existingCodes={fundCodes} />
       <FundTable funds={funds} loading={loading} error={error} />
       <ReturnComparisonChart funds={funds} loading={loading} error={error} />
       <MultiPriceChart fundsHistory={fundsHistory} loading={loading} error={error} />

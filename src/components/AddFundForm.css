@@ -1,0 +1,59 @@
+.add-fund-form {
+  margin-bottom: 24px;
+}
+
+.add-fund-form form {
+  display: flex;
+  gap: 8px;
+}
+
+.add-fund-input {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 14px;
+  width: 200px;
+  background: var(--card-bg);
+  color: var(--text);
+}
+
+.add-fund-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.add-fund-input:disabled {
+  opacity: 0.6;
+}
+
+.add-fund-btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.add-fund-btn:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.add-fund-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.add-fund-message {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.message-error {
+  color: var(--negative);
+}
+
+.message-success {
+  color: var(--positive);
+}
