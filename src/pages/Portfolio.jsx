@@ -2,8 +2,9 @@ import { useState, useEffect, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import TransactionForm from '../components/TransactionForm'
 import PortfolioSummary from '../components/PortfolioSummary'
-import { getAllTransactions } from '../services/portfolioService'
+import { getAllTransactions, deleteTransaction } from '../services/portfolioService'
 import { useFundList } from '../hooks/useFundList'
+import './Portfolio.css'
 
 function formatDate(timestamp) {
   if (!timestamp) return '-'
@@ -21,10 +22,23 @@ function formatTL(val) {
   return val.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' TL'
 }
 
+function groupByFund(transactions) {
+  const groups = new Map()
+  for (const tx of transactions) {
+    if (!groups.has(tx.fundCode)) {
+      groups.set(tx.fundCode, [])
+    }
+    groups.get(tx.fundCode).push(tx)
+  }
+  return groups
+}
+
 function Portfolio() {
   const { funds: fundList } = useFundList()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
+  const [deleting, setDeleting] = useState(null)
+  const [view, setView] = useState('all') // 'all' | 'grouped'
 
   const fetchTransactions = useCallback(async () => {
     try {
@@ -42,6 +56,48 @@ function Portfolio() {
     fetchTransactions()
   }, [fetchTransactions])
 
+  async function handleDelete(txId) {
+    if (deleting) return
+    setDeleting(txId)
+    try {
+      await deleteTransaction(txId)
+      await fetchTransactions()
+    } catch {
+      // silme hatası
+    } finally {
+      setDeleting(null)
+    }
+  }
+
+  const grouped = groupByFund(transactions)
+
+  function renderRow(tx) {
+    return (
+      <tr key={tx.id} className="tx-table-row">
+        <td className="tx-cell">{formatDate(tx.date)}</td>
+        <td className="tx-cell">
+          <span className={`tx-badge ${tx.type === 'buy' ? 'tx-badge-buy' : 'tx-badge-sell'}`}>
+            {tx.type === 'buy' ? 'Alım' : 'Satım'}
+          </span>
+        </td>
+        <td className="tx-cell tx-cell-bold">{tx.fundCode}</td>
+        <td className="tx-cell tx-cell-right">{formatPrice(tx.quantity)}</td>
+        <td className="tx-cell tx-cell-right">{formatPrice(tx.pricePerUnit)}</td>
+        <td className="tx-cell tx-cell-right tx-cell-bold">{formatTL(tx.quantity * tx.pricePerUnit)}</td>
+        <td className="tx-cell tx-cell-center">
+          <button
+            className="tx-delete-btn"
+            onClick={() => handleDelete(tx.id)}
+            disabled={deleting === tx.id}
+            title="Sil"
+          >
+            {deleting === tx.id ? '...' : '×'}
+          </button>
+        </td>
+      </tr>
+    )
+  }
+
   return (
     <div>
       <div className="watchlist-header">
@@ -53,53 +109,96 @@ function Portfolio() {
 
       <TransactionForm fundList={fundList} onSaved={fetchTransactions} />
 
-      <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-        <h3 style={{ padding: '16px 20px 12px', fontSize: 16, margin: 0 }}>İşlem Geçmişi</h3>
+      <div className="tx-history-card">
+        <div className="tx-history-header">
+          <h3 className="tx-history-title">İşlem Geçmişi</h3>
+          {transactions.length > 0 && (
+            <div className="tx-view-toggle">
+              <button
+                className={`tx-view-btn ${view === 'all' ? 'tx-view-active' : ''}`}
+                onClick={() => setView('all')}
+              >
+                Tümü
+              </button>
+              <button
+                className={`tx-view-btn ${view === 'grouped' ? 'tx-view-active' : ''}`}
+                onClick={() => setView('grouped')}
+              >
+                Fon Bazlı
+              </button>
+            </div>
+          )}
+        </div>
 
         {loading ? (
-          <p style={{ padding: '12px 20px', color: 'var(--text-secondary)', fontSize: 14 }}>Yükleniyor...</p>
+          <p className="tx-empty">Yükleniyor...</p>
         ) : transactions.length === 0 ? (
-          <p style={{ padding: '12px 20px', color: 'var(--text-secondary)', fontSize: 14 }}>Henüz işlem kaydı yok.</p>
-        ) : (
+          <p className="tx-empty">Henüz işlem kaydı yok.</p>
+        ) : view === 'all' ? (
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+            <table className="tx-table">
               <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
-                  <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tarih</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Tür</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-secondary)' }}>Fon</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>Adet</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>Birim Fiyat</th>
-                  <th style={{ padding: '8px 12px', fontWeight: 600, color: 'var(--text-secondary)', textAlign: 'right' }}>Toplam</th>
+                <tr className="tx-table-head">
+                  <th className="tx-th">Tarih</th>
+                  <th className="tx-th">Tür</th>
+                  <th className="tx-th">Fon</th>
+                  <th className="tx-th tx-th-right">Adet</th>
+                  <th className="tx-th tx-th-right">Birim Fiyat</th>
+                  <th className="tx-th tx-th-right">Toplam</th>
+                  <th className="tx-th tx-th-center" style={{ width: 40 }}></th>
                 </tr>
               </thead>
               <tbody>
-                {transactions.map((tx) => (
-                  <tr key={tx.id} style={{ borderBottom: '1px solid var(--border)' }}>
-                    <td style={{ padding: '8px 12px' }}>{formatDate(tx.date)}</td>
-                    <td style={{ padding: '8px 12px' }}>
-                      <span style={{
-                        display: 'inline-block',
-                        padding: '2px 8px',
-                        borderRadius: 4,
-                        fontSize: 12,
-                        fontWeight: 600,
-                        background: tx.type === 'buy' ? '#e8f5e9' : '#ffebee',
-                        color: tx.type === 'buy' ? 'var(--positive)' : 'var(--negative)',
-                      }}>
-                        {tx.type === 'buy' ? 'Alım' : 'Satım'}
-                      </span>
-                    </td>
-                    <td style={{ padding: '8px 12px', fontWeight: 600 }}>{tx.fundCode}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right' }}>{formatPrice(tx.quantity)}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right' }}>{formatPrice(tx.pricePerUnit)}</td>
-                    <td style={{ padding: '8px 12px', textAlign: 'right', fontWeight: 500 }}>
-                      {formatTL(tx.quantity * tx.pricePerUnit)}
-                    </td>
-                  </tr>
-                ))}
+                {transactions.map(renderRow)}
               </tbody>
             </table>
+          </div>
+        ) : (
+          <div>
+            {Array.from(grouped.entries()).map(([fundCode, txs]) => (
+              <div key={fundCode} className="tx-fund-group">
+                <h4 className="tx-fund-group-title">{fundCode}</h4>
+                <div style={{ overflowX: 'auto' }}>
+                  <table className="tx-table">
+                    <thead>
+                      <tr className="tx-table-head">
+                        <th className="tx-th">Tarih</th>
+                        <th className="tx-th">Tür</th>
+                        <th className="tx-th tx-th-right">Adet</th>
+                        <th className="tx-th tx-th-right">Birim Fiyat</th>
+                        <th className="tx-th tx-th-right">Toplam</th>
+                        <th className="tx-th tx-th-center" style={{ width: 40 }}></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {txs.map((tx) => (
+                        <tr key={tx.id} className="tx-table-row">
+                          <td className="tx-cell">{formatDate(tx.date)}</td>
+                          <td className="tx-cell">
+                            <span className={`tx-badge ${tx.type === 'buy' ? 'tx-badge-buy' : 'tx-badge-sell'}`}>
+                              {tx.type === 'buy' ? 'Alım' : 'Satım'}
+                            </span>
+                          </td>
+                          <td className="tx-cell tx-cell-right">{formatPrice(tx.quantity)}</td>
+                          <td className="tx-cell tx-cell-right">{formatPrice(tx.pricePerUnit)}</td>
+                          <td className="tx-cell tx-cell-right tx-cell-bold">{formatTL(tx.quantity * tx.pricePerUnit)}</td>
+                          <td className="tx-cell tx-cell-center">
+                            <button
+                              className="tx-delete-btn"
+                              onClick={() => handleDelete(tx.id)}
+                              disabled={deleting === tx.id}
+                              title="Sil"
+                            >
+                              {deleting === tx.id ? '...' : '×'}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            ))}
           </div>
         )}
       </div>
