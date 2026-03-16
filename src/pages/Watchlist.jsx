@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import FundTable from '../components/FundTable'
 import ReturnComparisonChart from '../components/ReturnComparisonChart'
+import MultiPriceChart from '../components/MultiPriceChart'
 import { getFundHistory } from '../services/tefasApi'
 import { DEFAULT_FUNDS } from '../config/collections'
 
@@ -11,6 +12,7 @@ function calcReturn(currentPrice, oldPrice) {
 
 function Watchlist() {
   const [funds, setFunds] = useState([])
+  const [fundsHistory, setFundsHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -27,7 +29,6 @@ function Watchlist() {
           const history = await getFundHistory(code, thirtyDaysAgo, today)
           if (!history || history.length === 0) return null
 
-          // Veriler en yeniden eskiye sıralı gelebilir, tarihe göre sıralayalım
           const sorted = [...history].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
           const latest = sorted[0]
           const prev = sorted[1] || null
@@ -43,6 +44,7 @@ function Watchlist() {
             dailyReturn: calcReturn(latest.FIYAT, prev?.FIYAT),
             weeklyReturn: calcReturn(latest.FIYAT, weekAgo?.FIYAT),
             monthlyReturn: calcReturn(latest.FIYAT, monthAgo?.FIYAT),
+            history,
           }
         })
 
@@ -52,6 +54,9 @@ function Watchlist() {
           .map((r) => r.value)
 
         setFunds(fundData)
+        setFundsHistory(
+          fundData.map((f) => ({ fundCode: f.fundCode, history: f.history }))
+        )
       } catch (err) {
         setError('Veriler yüklenirken bir hata oluştu.')
       } finally {
@@ -67,6 +72,7 @@ function Watchlist() {
       <h2 style={{ marginBottom: '16px' }}>Watchlist</h2>
       <FundTable funds={funds} loading={loading} error={error} />
       <ReturnComparisonChart funds={funds} loading={loading} error={error} />
+      <MultiPriceChart fundsHistory={fundsHistory} loading={loading} error={error} />
     </div>
   )
 }
