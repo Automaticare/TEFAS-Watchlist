@@ -1,15 +1,14 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import FundTable from '../components/FundTable'
 import ReturnComparisonChart from '../components/ReturnComparisonChart'
 import MultiPriceChart from '../components/MultiPriceChart'
 import DateRangeSelector from '../components/DateRangeSelector'
-import AddFundForm from '../components/AddFundForm'
 import PortfolioSummary from '../components/PortfolioSummary'
 import TransactionForm from '../components/TransactionForm'
 import { getFundHistory } from '../services/tefasApi'
-import { getAllTransactions, deleteTransaction } from '../services/portfolioService'
-import { useWatchlist } from '../hooks/useWatchlist'
+import { getAllTransactions, deleteTransaction, calcPortfolioSummary } from '../services/portfolioService'
 import { useFundList } from '../hooks/useFundList'
+import { DEFAULT_FUNDS } from '../config/collections'
 import '../pages/Portfolio.css'
 
 function calcReturn(currentPrice, oldPrice) {
@@ -34,7 +33,6 @@ function formatTL(val) {
 }
 
 function Watchlist() {
-  const { fundCodes, addFund, removeFund, resetToDefaults } = useWatchlist()
   const { funds: fundList } = useFundList()
   const [activeTab, setActiveTab] = useState('watchlist')
   const [funds, setFunds] = useState([])
@@ -47,6 +45,40 @@ function Watchlist() {
   const [transactions, setTransactions] = useState([])
   const [txLoading, setTxLoading] = useState(true)
   const [deleting, setDeleting] = useState(null)
+
+  const fetchTransactions = useCallback(async () => {
+    try {
+      setTxLoading(true)
+      const data = await getAllTransactions()
+      setTransactions(data)
+    } catch {
+      // Hata durumunda boş liste
+    } finally {
+      setTxLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchTransactions()
+  }, [fetchTransactions])
+
+  // Watchlist fon kodları: portföyde payı olan fonlar, yoksa default liste
+  const fundCodes = useMemo(() => {
+    if (transactions.length === 0) return DEFAULT_FUNDS
+
+    const sorted = [...transactions].sort((a, b) => {
+      const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date)
+      const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date)
+      return dateA - dateB
+    })
+
+    const summary = calcPortfolioSummary(sorted)
+    const activeFunds = Array.from(summary.values())
+      .filter((f) => f.netQuantity > 0)
+      .map((f) => f.fundCode)
+
+    return activeFunds.length > 0 ? activeFunds : DEFAULT_FUNDS
+  }, [transactions])
 
   useEffect(() => {
     async function fetchFunds() {
@@ -100,22 +132,6 @@ function Watchlist() {
     fetchFunds()
   }, [days, fundCodes])
 
-  const fetchTransactions = useCallback(async () => {
-    try {
-      setTxLoading(true)
-      const data = await getAllTransactions()
-      setTransactions(data)
-    } catch {
-      // Hata durumunda boş liste
-    } finally {
-      setTxLoading(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchTransactions()
-  }, [fetchTransactions])
-
   async function handleDeleteTx(txId) {
     if (deleting) return
     setDeleting(txId)
@@ -151,15 +167,9 @@ function Watchlist() {
       {activeTab === 'watchlist' && (
         <div>
           <div className="watchlist-actions">
-            <AddFundForm onAdd={addFund} existingCodes={fundCodes} fundList={fundList} />
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-              <DateRangeSelector value={days} onChange={setDays} />
-              <button className="reset-btn" onClick={resetToDefaults}>
-                Varsayılana Sıfırla
-              </button>
-            </div>
+            <DateRangeSelector value={days} onChange={setDays} />
           </div>
-          <FundTable funds={funds} loading={loading} error={error} onRemove={removeFund} />
+          <FundTable funds={funds} loading={loading} error={error} />
           <ReturnComparisonChart funds={funds} loading={loading} error={error} />
           <MultiPriceChart fundsHistory={fundsHistory} loading={loading} error={error} />
         </div>
