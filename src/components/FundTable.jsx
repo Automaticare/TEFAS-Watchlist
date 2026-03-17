@@ -50,6 +50,7 @@ const COLUMNS = [
   { key: 'fundCode', label: 'Kod', align: 'left' },
   { key: 'fundName', label: 'Fon Adı', align: 'left' },
   { key: 'price', label: 'Fiyat', align: 'right' },
+  { key: 'lastBuyDate', label: 'Son Alım', align: 'right' },
   { key: 'dailyReturn', label: 'Günlük', align: 'right' },
   { key: 'weeklyReturn', label: 'Haftalık', align: 'right' },
   { key: 'monthlyReturn', label: 'Aylık', align: 'right' },
@@ -113,6 +114,11 @@ function FundTable({ funds, loading, error }) {
         return <span className="fund-name">{fund.fundName}</span>
       case 'price':
         return formatPrice(fund.price)
+      case 'lastBuyDate': {
+        if (!fund.lastBuyDate) return '-'
+        const d = fund.lastBuyDate instanceof Date ? fund.lastBuyDate : new Date(fund.lastBuyDate)
+        return d.toLocaleDateString('tr-TR')
+      }
       case 'dailyReturn':
       case 'weeklyReturn':
       case 'monthlyReturn':

@@ -74,6 +74,19 @@ function Watchlist() {
     return calcPortfolioSummary(sorted)
   }, [transactions])
 
+  // Her fon için en son alım tarihi
+  const lastBuyDateMap = useMemo(() => {
+    const map = new Map()
+    transactions
+      .filter((tx) => tx.type === 'buy')
+      .forEach((tx) => {
+        const d = tx.date?.toDate ? tx.date.toDate() : new Date(tx.date)
+        const prev = map.get(tx.fundCode)
+        if (!prev || d > prev) map.set(tx.fundCode, d)
+      })
+    return map
+  }, [transactions])
+
   // Aktif fonlar (net adet > 0)
   const fundCodes = useMemo(() => {
     return Array.from(portfolioMap.values())
@@ -124,6 +137,7 @@ function Watchlist() {
             fundCode: code,
             fundName: latest.FONUNVAN,
             price: latest.FIYAT,
+            lastBuyDate: lastBuyDateMap.get(code) || null,
             investors: latest.KISISAYISI,
             marketCap: latest.PORTFOYBUYUKLUK,
             dailyReturn: calcReturn(latest.FIYAT, prev?.FIYAT),
@@ -155,7 +169,7 @@ function Watchlist() {
     }
 
     fetchFunds()
-  }, [days, fundCodes, hasPortfolio, portfolioMap])
+  }, [days, fundCodes, hasPortfolio, portfolioMap, lastBuyDateMap])
 
   async function handleDeleteTx(txId) {
     if (deleting) return
