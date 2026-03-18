@@ -1,6 +1,3 @@
-import { useState, useEffect } from 'react'
-import { calcPortfolioSummary } from '../services/portfolioService'
-import { getFundHistory } from '../services/tefasApi'
 import './PortfolioSummary.css'
 
 function formatTL(val) {
@@ -14,126 +11,50 @@ function formatPercent(val) {
   return sign + val.toFixed(2) + '%'
 }
 
-function PortfolioSummary({ transactions }) {
-  const [summary, setSummary] = useState(null)
-  const [loading, setLoading] = useState(false)
-
-  useEffect(() => {
-    if (!transactions || transactions.length === 0) {
-      setSummary(null)
-      return
-    }
-
-    let cancelled = false
-
-    async function calculate() {
-      setLoading(true)
-      try {
-        // İşlemleri kronolojik sıraya getir (eskiden yeniye) — doğru maliyet hesabı için
-        const sorted = [...transactions].sort((a, b) => {
-          const dateA = a.date?.toDate ? a.date.toDate() : new Date(a.date)
-          const dateB = b.date?.toDate ? b.date.toDate() : new Date(b.date)
-          return dateA - dateB
-        })
-
-        const portfolioMap = calcPortfolioSummary(sorted)
-
-        // Portföyde hala payı olan fonları bul
-        const activeFunds = Array.from(portfolioMap.values()).filter((f) => f.netQuantity > 0)
-
-        if (activeFunds.length === 0) {
-          if (!cancelled) setSummary({ totalValue: 0, totalCost: 0, totalPnl: 0, totalPnlPct: 0, dailyPnl: 0, dailyPnlPct: 0 })
-          return
-        }
-
-        // Her aktif fon için son 2 günlük fiyatı çek
-        const today = new Date()
-        const weekAgo = new Date()
-        weekAgo.setDate(today.getDate() - 7)
-
-        const pricePromises = activeFunds.map(async (fund) => {
-          const history = await getFundHistory(fund.fundCode, weekAgo, today)
-          if (!history || history.length === 0) return { fundCode: fund.fundCode, currentPrice: null, prevPrice: null }
-
-          // FIYAT=0 olan kayıtları filtrele (gün içi henüz güncellenmemiş veri)
-          const validHistory = history.filter((h) => h.FIYAT && h.FIYAT > 0)
-          if (validHistory.length === 0) return { fundCode: fund.fundCode, currentPrice: null, prevPrice: null }
-
-          const sortedHistory = [...validHistory].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
-          return {
-            fundCode: fund.fundCode,
-            currentPrice: sortedHistory[0]?.FIYAT || null,
-            prevPrice: sortedHistory[1]?.FIYAT || null,
-          }
-        })
-
-        const prices = await Promise.allSettled(pricePromises)
-        const priceMap = new Map()
-        for (const result of prices) {
-          if (result.status === 'fulfilled' && result.value.currentPrice != null) {
-            priceMap.set(result.value.fundCode, result.value)
-          }
-        }
-
-        let totalValue = 0
-        let totalCost = 0
-        let prevTotalValue = 0
-
-        for (const fund of activeFunds) {
-          const price = priceMap.get(fund.fundCode)
-          if (price) {
-            totalValue += fund.netQuantity * price.currentPrice
-            if (price.prevPrice != null) {
-              prevTotalValue += fund.netQuantity * price.prevPrice
-            } else {
-              prevTotalValue += fund.netQuantity * price.currentPrice
-            }
-          }
-          totalCost += fund.totalCost
-        }
-
-        const totalPnl = totalValue - totalCost
-        const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0
-        const dailyPnl = totalValue - prevTotalValue
-        const dailyPnlPct = prevTotalValue > 0 ? (dailyPnl / prevTotalValue) * 100 : 0
-
-        if (!cancelled) {
-          setSummary({ totalValue, totalCost, totalPnl, totalPnlPct, dailyPnl, dailyPnlPct })
-        }
-      } catch {
-        // Hata durumunda sessiz kal
-      } finally {
-        if (!cancelled) setLoading(false)
-      }
-    }
-
-    calculate()
-    return () => { cancelled = true }
-  }, [transactions])
-
-  if (!transactions || transactions.length === 0) return null
+function PortfolioSummary({ funds, loading }) {
   if (loading) return <div className="portfolio-summary"><p className="summary-loading">Portföy hesaplanıyor...</p></div>
+  if (!funds || funds.length === 0) return null
 
-  if (!summary) return null
+  let totalValue = 0
+  let totalCost = 0
+  let prevTotalValue = 0
+
+  for (const fund of funds) {
+    if (fund.price == null) continue
+    totalValue += fund.positionValue
+    totalCost += fund.quantity * fund.avgCost
+    // Günlük kar/zarar için bir önceki fiyatı hesapla
+    if (fund.dailyReturn != null) {
+      const prevPrice = fund.price / (1 + fund.dailyReturn / 100)
+      prevTotalValue += fund.quantity * prevPrice
+    } else {
+      prevTotalValue += fund.positionValue
+    }
+  }
+
+  const totalPnl = totalValue - totalCost
+  const totalPnlPct = totalCost > 0 ? (totalPnl / totalCost) * 100 : 0
+  const dailyPnl = totalValue - prevTotalValue
+  const dailyPnlPct = prevTotalValue > 0 ? (dailyPnl / prevTotalValue) * 100 : 0
 
   const cards = [
     {
       label: 'Portföy Değeri',
-      value: formatTL(summary.totalValue),
-      sub: `Maliyet: ${formatTL(summary.totalCost)}`,
+      value: formatTL(totalValue),
+      sub: `Maliyet: ${formatTL(totalCost)}`,
       color: null,
     },
     {
       label: 'Toplam Kar/Zarar',
-      value: formatTL(summary.totalPnl),
-      sub: formatPercent(summary.totalPnlPct),
-      color: summary.totalPnl >= 0 ? 'var(--positive)' : 'var(--negative)',
+      value: formatTL(totalPnl),
+      sub: formatPercent(totalPnlPct),
+      color: totalPnl >= 0 ? 'var(--positive)' : 'var(--negative)',
     },
     {
       label: 'Günlük Kar/Zarar',
-      value: formatTL(summary.dailyPnl),
-      sub: formatPercent(summary.dailyPnlPct),
-      color: summary.dailyPnl >= 0 ? 'var(--positive)' : 'var(--negative)',
+      value: formatTL(dailyPnl),
+      sub: formatPercent(dailyPnlPct),
+      color: dailyPnl >= 0 ? 'var(--positive)' : 'var(--negative)',
     },
   ]
 

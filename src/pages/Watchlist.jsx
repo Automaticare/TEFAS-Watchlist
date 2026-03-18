@@ -226,7 +226,7 @@ function Watchlist() {
             </div>
           ) : (
             <>
-              <PortfolioSummary transactions={transactions} />
+              <PortfolioSummary funds={funds} loading={loading} />
               {(() => {
                 if (loading || funds.length === 0) return null
                 const today = new Date()
