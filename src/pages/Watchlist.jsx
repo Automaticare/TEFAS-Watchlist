@@ -118,7 +118,11 @@ function Watchlist() {
           const history = await getFundHistory(code, startDate, today)
           if (!history || history.length === 0) return null
 
-          const sorted = [...history].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
+          // FIYAT=0 olan kayıtları filtrele (gün içi henüz güncellenmemiş veri)
+          const validHistory = history.filter((h) => h.FIYAT && h.FIYAT > 0)
+          if (validHistory.length === 0) return null
+
+          const sorted = [...validHistory].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
           const latest = sorted[0]
           const prev = sorted[1] || null
           const weekAgo = sorted.find((_, i) => i >= 5) || null

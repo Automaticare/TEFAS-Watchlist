@@ -38,9 +38,16 @@ function FundDetail() {
           return
         }
 
-        setPriceHistory(history)
+        // FIYAT=0 olan kayıtları filtrele (gün içi henüz güncellenmemiş veri)
+        const validHistory = history.filter((h) => h.FIYAT && h.FIYAT > 0)
+        setPriceHistory(validHistory)
 
-        const sorted = [...history].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
+        if (validHistory.length === 0) {
+          setError('Bu fon için geçerli fiyat verisi bulunamadı.')
+          return
+        }
+
+        const sorted = [...validHistory].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
         const latest = sorted[0]
         const prev = sorted[1] || null
         const weekAgo = sorted.find((_, i) => i >= 5) || null
