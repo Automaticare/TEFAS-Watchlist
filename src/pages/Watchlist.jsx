@@ -137,10 +137,13 @@ function Watchlist() {
           const pnl = positionValue - totalCost
           const pnlPct = totalCost > 0 ? (pnl / totalCost) * 100 : 0
 
+          const latestDate = new Date(parseInt(latest.TARIH))
+
           return {
             fundCode: code,
             fundName: latest.FONUNVAN,
             price: latest.FIYAT,
+            priceDate: latestDate,
             lastBuyDate: lastBuyDateMap.get(code) || null,
             investors: latest.KISISAYISI,
             marketCap: latest.PORTFOYBUYUKLUK,
@@ -224,6 +227,17 @@ function Watchlist() {
           ) : (
             <>
               <PortfolioSummary transactions={transactions} />
+              {!loading && funds.some((f) => {
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                const pd = f.priceDate ? new Date(f.priceDate) : null
+                if (pd) pd.setHours(0, 0, 0, 0)
+                return pd && pd < today
+              }) && (
+                <div className="stale-data-warning">
+                  Bazı fonların güncel fiyatı henüz TEFAS tarafından yayınlanmadı. Gösterilen değerler en son işlem gününe aittir.
+                </div>
+              )}
               <div className="watchlist-actions">
                 <DateRangeSelector value={days} onChange={setDays} />
               </div>
