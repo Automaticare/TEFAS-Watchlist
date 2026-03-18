@@ -55,7 +55,11 @@ function PortfolioSummary({ transactions }) {
           const history = await getFundHistory(fund.fundCode, weekAgo, today)
           if (!history || history.length === 0) return { fundCode: fund.fundCode, currentPrice: null, prevPrice: null }
 
-          const sortedHistory = [...history].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
+          // FIYAT=0 olan kayıtları filtrele (gün içi henüz güncellenmemiş veri)
+          const validHistory = history.filter((h) => h.FIYAT && h.FIYAT > 0)
+          if (validHistory.length === 0) return { fundCode: fund.fundCode, currentPrice: null, prevPrice: null }
+
+          const sortedHistory = [...validHistory].sort((a, b) => parseInt(b.TARIH) - parseInt(a.TARIH))
           return {
             fundCode: fund.fundCode,
             currentPrice: sortedHistory[0]?.FIYAT || null,
